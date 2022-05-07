@@ -1,0 +1,6 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory `/home/bso/Desktop/ESP8266-MQTT-Client'
+make: Leaving directory `/home/bso/Desktop/ESP8266-MQTT-Client'
+ 
+/home/bso/esp-open-rtos/lwip/component.mk:15: *** "LWIP git submodule not installed. Please run 'git submodule init' then 'git submodule update'".  Stop.
+
