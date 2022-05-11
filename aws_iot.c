@@ -23,14 +23,14 @@
 #define MQTT_PUB_TOPIC ("esp8266/temp")
 #define MQTT_SUB_TOPIC ("esp8266/control")
 #define MQTT_PORT      (8883)
-#define MQTT_MSG_LEN   (30)
+#define MQTT_MSG_LEN   (49)
 
 #define PCF_ADDRESS	    0x38
 #define MPU_ADDRESS	    0x68
 #define BUS_I2C		    0
 #define SCL             14
 #define SDA             12
-#define SENSOR_PERIOD   1000 // ms
+#define SENSOR_PERIOD   5000 // ms
 #define GPIO_LED        2
 
 /* certs, key, and endpoint */
@@ -44,15 +44,20 @@ static QueueHandle_t publish_queue;
 typedef enum 
 {
 	BMP280_TEMPERATURE,
-    BMP280_PRESSURE
+    BMP280_PRESSURE,
+    BMP280_HUMIDITY
 } bmp280_quantity;
 
 bmp280_t bmp280_dev;
 
+float convert_to_mbar(float pressure_in_pa)
+{
+    return pressure_in_pa / 100;
+}
+
 float read_bmp280 (bmp280_quantity selected_quantity)
 {
-    float temperature;
-    float pressure;
+    float temperature, pressure; //, humidity;
 
     // Force a measurement.
     bmp280_force_measurement(&bmp280_dev);
@@ -61,14 +66,19 @@ float read_bmp280 (bmp280_quantity selected_quantity)
     while (bmp280_is_measuring(&bmp280_dev))
     {};
 
-    // Read measurment.
-    bmp280_read_float(&bmp280_dev, &temperature, &pressure, NULL);
+    // Read measurement.
+    // Go to ~/esp-open-rtos/extras/bmp280/bmp280.h -> this is where bmp280_read_float is defined
+    // Humidity doesn't work, i.e. MQTT cannot publish that message (as far as I tried)
+    bmp280_read_float(&bmp280_dev, &temperature, &pressure, NULL); //, &humidity);
 
     if (selected_quantity == BMP280_TEMPERATURE)
         return temperature;
 
     else if (selected_quantity == BMP280_PRESSURE)
-        return pressure;
+        return convert_to_mbar(pressure);
+
+    // else if (selected_quantity == BMP280_HUMIDITY)
+    //     return humidity;
 
     return 0;
 }
@@ -76,15 +86,20 @@ float read_bmp280 (bmp280_quantity selected_quantity)
 void read_temp_task(void* params)
 {
     char msg[MQTT_MSG_LEN];
-    float temp;
+    float temp, pressure; //, humidity;
 
     while(1)
     {
         // Measure temperature.
         temp = read_bmp280(BMP280_TEMPERATURE);
+        // Measure pressure.
+        pressure = read_bmp280(BMP280_PRESSURE);
+        // Measure humidity.
+        // humidity = read_bmp280(BMP280_HUMIDITY);
 
-        // Store temp in msg (mqtt payload in json format).
-        snprintf(msg, MQTT_MSG_LEN, "{'Temperature': %.2f C}", temp);
+        // Store values in msg (mqtt payload in json format).
+        snprintf(msg, MQTT_MSG_LEN, "{'Temperature': %.2f C, 'Pressure': %.2f mbar}", temp, pressure);
+        printf("%d\n", strlen(msg));
         printf("%s\n", msg);
 
         // Attempt to push msg to queue.
