@@ -23,7 +23,7 @@
 #define MQTT_PUB_TOPIC ("esp8266/temp")
 #define MQTT_SUB_TOPIC ("esp8266/control")
 #define MQTT_PORT      (8883)
-#define MQTT_MSG_LEN   (49)
+#define MQTT_MSG_LEN   (140) // ACTUALLY WAS THE PROBLEM ??????
 
 #define PCF_ADDRESS	    0x38
 #define MPU_ADDRESS	    0x68
@@ -87,6 +87,8 @@ void read_temp_task(void* params)
 {
     char msg[MQTT_MSG_LEN];
     float temp, pressure; //, humidity;
+    int counter = 0;
+    float tempAvg = 0, pressureAvg = 0;
 
     while(1)
     {
@@ -97,10 +99,23 @@ void read_temp_task(void* params)
         // Measure humidity.
         // humidity = read_bmp280(BMP280_HUMIDITY);
 
+        // Average
+        if (counter == 0) 
+        {
+            tempAvg = temp;
+            pressureAvg = pressure;
+        }
+        else
+        {
+            tempAvg = ((tempAvg * counter) + temp) / (counter + 1);
+            pressureAvg = ((pressureAvg * counter) + pressure) / (counter + 1);
+        }
+
         // Store values in msg (mqtt payload in json format).
-        snprintf(msg, MQTT_MSG_LEN, "{'Temperature': %.2f C, 'Pressure': %.2f mbar}", temp, pressure);
+        snprintf(msg, MQTT_MSG_LEN, "{'T': %.2f C, 'P': %.2f mbar, 'Avg T': %.2f C, 'Avg P': %.2f mbar}", temp, pressure, tempAvg, pressureAvg);
         printf("%d\n", strlen(msg));
         printf("%s\n", msg);
+        counter += 1;
 
         // Attempt to push msg to queue.
         if (xQueueSend(publish_queue, (void *) msg, 0) == pdFALSE)
