@@ -113,7 +113,7 @@ void read_temp_task(void* params)
 
         // Store values in msg (mqtt payload in json format).
         snprintf(msg, MQTT_MSG_LEN, "{'T': %.2f C, 'P': %.2f mbar, 'Avg T': %.2f C, 'Avg P': %.2f mbar}", temp, pressure, tempAvg, pressureAvg);
-        printf("%d\n", strlen(msg));
+        // printf("%d\n", strlen(msg));
         printf("%s\n", msg);
         counter += 1;
 
@@ -128,7 +128,7 @@ void read_temp_task(void* params)
 //////////////////////////////////////////////////////////////////////////////
 void low_pass_filter(float val)
 {
-    
+    // already exists!
 }
 //////////////////////////////////////////////////////////////////////////////
 void control_led(mqtt_message_t * message)
@@ -294,7 +294,7 @@ static void mqtt_task(void *pvParameters) {
                 // Assemble message.                
                 mqtt_message_t  message;
                 message.payload     = msg;
-                message.payloadlen  = MQTT_MSG_LEN; //strlen(msg);
+                message.payloadlen  = strlen(msg);
                 message.dup         = 0;
                 message.qos         = MQTT_QOS1;
                 message.retained    = 0;
