@@ -12,6 +12,3 @@ Note that `include/private_ssid_config.h` is git-ignored.
 `bash usb_reset.sh` \
 `make flash`
 
-## Display MQTT topic logs
-Send data can be view through aws console.
-![image](img/logs.png)
